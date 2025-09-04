@@ -24,13 +24,19 @@ end
 
 -- Resize canvas
 function love.resize(w, h)
+    -- Save old canvas
     local oldCanvas = canvas
+    -- Create new canvas of new size
     canvas = love.graphics.newCanvas(w, h)
     love.graphics.setCanvas(canvas)
     love.graphics.clear(bgColor)
+
+    -- Draw old canvas without scaling
     if oldCanvas then
+        love.graphics.setColor(1,1,1)
         love.graphics.draw(oldCanvas, 0, 0)
     end
+
     love.graphics.setCanvas()
 end
 
@@ -184,6 +190,7 @@ function love.draw()
         end
     end
 end
+
 
 
 
