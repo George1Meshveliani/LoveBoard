@@ -1,4 +1,4 @@
-local tools = {"pen", "line", "vector"}
+local tools = {"pen", "line", "vector", "eraser"}
 local currentTool = "pen"
 
 local drawing = false
@@ -24,19 +24,14 @@ end
 
 -- Resize canvas
 function love.resize(w, h)
-    -- Save old canvas
     local oldCanvas = canvas
-    -- Create new canvas of new size
     canvas = love.graphics.newCanvas(w, h)
     love.graphics.setCanvas(canvas)
     love.graphics.clear(bgColor)
-
-    -- Draw old canvas without scaling
     if oldCanvas then
         love.graphics.setColor(1,1,1)
         love.graphics.draw(oldCanvas, 0, 0)
     end
-
     love.graphics.setCanvas()
 end
 
@@ -63,7 +58,7 @@ function love.mousepressed(x, y, button)
         local cx, cy = toCanvasCoords(x, y)
         drawing = true
         startX, startY = cx, cy
-        prevX, prevY = cx, cy -- for pen tool
+        prevX, prevY = cx, cy -- for pen/eraser tool
     end
 end
 
@@ -73,7 +68,11 @@ function love.mousereleased(x, y, button)
         local endX, endY = toCanvasCoords(x, y)
         if currentTool == "line" or currentTool == "vector" then
             love.graphics.setCanvas(canvas)
-            love.graphics.setColor(penColor)
+            if currentTool == "eraser" then
+                love.graphics.setColor(bgColor)
+            else
+                love.graphics.setColor(penColor)
+            end
             love.graphics.setLineWidth(2)
             love.graphics.line(startX, startY, endX, endY)
 
@@ -97,11 +96,15 @@ end
 
 -- Mouse moved
 function love.mousemoved(x, y, dx, dy)
-    if drawing and currentTool == "pen" then
+    if drawing and (currentTool == "pen" or currentTool == "eraser") then
         local cx, cy = toCanvasCoords(x, y)
         love.graphics.setCanvas(canvas)
-        love.graphics.setColor(penColor)
-        love.graphics.setLineWidth(2)
+        if currentTool == "eraser" then
+            love.graphics.setColor(bgColor)
+        else
+            love.graphics.setColor(penColor)
+        end
+        love.graphics.setLineWidth(10) -- make eraser a bit thicker
         love.graphics.line(prevX, prevY, cx, cy)
         love.graphics.setCanvas()
         prevX, prevY = cx, cy
@@ -190,6 +193,7 @@ function love.draw()
         end
     end
 end
+
 
 
 
