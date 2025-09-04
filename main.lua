@@ -1,4 +1,4 @@
-local tools = {"pen", "chalk", "marker", "line", "vector", "eraser"} -- added "marker"
+local tools = {"pen", "chalk", "marker", "line", "vector", "eraser"}
 local currentTool = "pen"
 
 local drawing = false
@@ -9,7 +9,7 @@ local penColor = {0, 0, 0}
 local canvas
 local prevX, prevY
 
-local headerHeight = 80
+local headerHeight = 90
 
 -- Initialize canvas
 function love.load()
@@ -22,7 +22,6 @@ function love.load()
     love.graphics.setCanvas()
 end
 
--- Resize canvas
 function love.resize(w, h)
     local oldCanvas = canvas
     canvas = love.graphics.newCanvas(w, h)
@@ -35,7 +34,6 @@ function love.resize(w, h)
     love.graphics.setCanvas()
 end
 
--- Convert screen coordinates to canvas coordinates
 local function toCanvasCoords(x, y)
     return x, y
 end
@@ -43,12 +41,15 @@ end
 -- Mouse pressed
 function love.mousepressed(x, y, button)
     if y <= headerHeight then
-        local iconSize = 40
-        for i, tool in ipairs(tools) do
-            local iconX = 20 + (i-1)*(iconSize+10)
-            if x >= iconX and x <= iconX + iconSize then
+        -- Tool selection in header
+        local xPos = 20
+        local font = love.graphics.getFont()
+        for _, tool in ipairs(tools) do
+            local width = font:getWidth(tool) + 20
+            if x >= xPos and x <= xPos + width then
                 currentTool = tool
             end
+            xPos = xPos + width + 10
         end
         return
     end
@@ -72,8 +73,7 @@ function love.mousereleased(x, y, button)
             love.graphics.line(startX, startY, endX, endY)
 
             if currentTool == "vector" then
-                local dx = endX - startX
-                local dy = endY - startY
+                local dx, dy = endX - startX, endY - startY
                 local angle = math.atan2(dy, dx)
                 local len = 10
                 love.graphics.line(endX - len*math.cos(angle - math.pi/6),
@@ -91,37 +91,39 @@ end
 
 -- Mouse moved
 function love.mousemoved(x, y, dx, dy)
+    local cx, cy = toCanvasCoords(x, y)
     if drawing then
-        local cx, cy = toCanvasCoords(x, y)
         love.graphics.setCanvas(canvas)
 
-        if currentTool == "eraser" then
-            love.graphics.setColor(bgColor)
-            love.graphics.setLineWidth(15)
+        if currentTool == "pen" then
+            love.graphics.setColor(penColor)
+            love.graphics.setLineWidth(2)
             love.graphics.line(prevX, prevY, cx, cy)
+            prevX, prevY = cx, cy
 
         elseif currentTool == "chalk" then
             love.graphics.setColor(penColor)
             love.graphics.setLineWidth(2)
             for i=1,3 do
-                local offsetX = math.random(-1,1)
-                local offsetY = math.random(-1,1)
-                love.graphics.line(prevX+offsetX, prevY+offsetY, cx+offsetX, cy+offsetY)
+                local ox, oy = math.random(-1,1), math.random(-1,1)
+                love.graphics.line(prevX+ox, prevY+oy, cx+ox, cy+oy)
             end
+            prevX, prevY = cx, cy
 
         elseif currentTool == "marker" then
-            love.graphics.setColor(penColor[1], penColor[2], penColor[3], 0.5) -- semi-transparent
+            love.graphics.setColor(0.9,0.2,0.2,0.5)
             love.graphics.setLineWidth(12)
             love.graphics.line(prevX, prevY, cx, cy)
+            prevX, prevY = cx, cy
 
-        else -- regular pen
-            love.graphics.setColor(penColor)
-            love.graphics.setLineWidth(2)
+        elseif currentTool == "eraser" then
+            love.graphics.setColor(bgColor)
+            love.graphics.setLineWidth(15)
             love.graphics.line(prevX, prevY, cx, cy)
+            prevX, prevY = cx, cy
         end
 
         love.graphics.setCanvas()
-        prevX, prevY = cx, cy
     end
 end
 
@@ -157,13 +159,12 @@ function love.keypressed(key)
     end
 end
 
--- Draw
+-- Draw function
 function love.draw()
-    -- Draw canvas
     love.graphics.setColor(1,1,1)
     love.graphics.draw(canvas,0,0)
 
-    -- Fancy header gradient
+    -- Fancy gradient header
     local width = love.graphics.getWidth()
     for i=0, headerHeight do
         local t = i/headerHeight
@@ -171,28 +172,30 @@ function love.draw()
         love.graphics.rectangle("fill", 0, i, width, 1)
     end
 
-    -- Tool icons
-    local iconSize = 40
-    for i, tool in ipairs(tools) do
-        local iconX = 20 + (i-1)*(iconSize+10)
+    -- Tool buttons
+    local font = love.graphics.getFont()
+    local xPos = 20
+    local baseColor = {0.2,0.6,0.9}
+    for _, tool in ipairs(tools) do
+        local textWidth = font:getWidth(tool) + 20
         if tool == currentTool then
-            love.graphics.setColor(0.1,0.8,1)
+            love.graphics.setColor(baseColor[1], baseColor[2], baseColor[3])
         else
-            love.graphics.setColor(0.3,0.3,0.3)
+            love.graphics.setColor(baseColor[1]*0.7, baseColor[2]*0.7, baseColor[3]*0.7)
         end
-        love.graphics.rectangle("fill", iconX, 20, iconSize, iconSize)
+        love.graphics.rectangle("fill", xPos, 20, textWidth, 40)
         love.graphics.setColor(1,1,1)
-        love.graphics.print(tool, iconX+5,30)
+        love.graphics.print(tool, xPos + 10, 30)
+        xPos = xPos + textWidth + 10
     end
 
     -- Instructions top-right
     local instructions = "D = Clear | C = Toggle BG | X = Exit"
-    local font = love.graphics.getFont()
     local textWidth = font:getWidth(instructions)
     love.graphics.setColor(1,1,1,0.9)
     love.graphics.print(instructions, width - textWidth - 20, 30)
 
-    -- Preview line/vector
+    -- Preview line/vector while drawing
     if drawing and (currentTool=="line" or currentTool=="vector") then
         local mx, my = toCanvasCoords(love.mouse.getPosition())
         love.graphics.setColor(penColor)
@@ -213,6 +216,8 @@ function love.draw()
         end
     end
 end
+
+
 
 
 
