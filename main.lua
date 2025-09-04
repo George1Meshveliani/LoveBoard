@@ -5,15 +5,31 @@ local penColor = {0, 0, 0}
 local canvas
 local prevX, prevY
 
+-- Initialize the canvas
 function love.load()
     love.window.setTitle("Love Board")
     love.window.setMode(1200, 800, {resizable = true})
-    canvas = love.graphics.newCanvas(1200, 800)
+    local w, h = love.graphics.getDimensions()
+    canvas = love.graphics.newCanvas(w, h)
     love.graphics.setCanvas(canvas)
     love.graphics.clear(bgColor)
     love.graphics.setCanvas()
 end
 
+-- Handle window resizing
+function love.resize(w, h)
+    local oldCanvas = canvas
+    canvas = love.graphics.newCanvas(w, h)
+    love.graphics.setCanvas(canvas)
+    love.graphics.clear(bgColor)
+    if oldCanvas then
+        love.graphics.setColor(1, 1, 1)
+        love.graphics.draw(oldCanvas, 0, 0)
+    end
+    love.graphics.setCanvas()
+end
+
+-- Mouse pressed
 function love.mousepressed(x, y, button)
     if button == 1 then
         drawing = true
@@ -21,12 +37,14 @@ function love.mousepressed(x, y, button)
     end
 end
 
+-- Mouse released
 function love.mousereleased(x, y, button)
     if button == 1 then
         drawing = false
     end
 end
 
+-- Drawing with mouse movement
 function love.mousemoved(x, y, dx, dy)
     if drawing then
         love.graphics.setCanvas(canvas)
@@ -38,15 +56,16 @@ function love.mousemoved(x, y, dx, dy)
     end
 end
 
+-- Key controls
 function love.keypressed(key)
     if key == "d" then
-        -- clear board
+        -- Clear canvas
         love.graphics.setCanvas(canvas)
         love.graphics.clear(bgColor)
         love.graphics.setCanvas()
 
     elseif key == "c" then
-        -- toggle background color and invert canvas
+        -- Toggle background color
         bgWhite = not bgWhite
         if bgWhite then
             bgColor = {1, 1, 1}
@@ -56,7 +75,7 @@ function love.keypressed(key)
             penColor = {1, 1, 1}
         end
 
-        -- Invert the existing canvas
+        -- Invert existing canvas
         local imgData = canvas:newImageData()
         for x = 0, imgData:getWidth()-1 do
             for y = 0, imgData:getHeight()-1 do
@@ -73,10 +92,12 @@ function love.keypressed(key)
         end)
 
     elseif key == "x" then
+        -- Exit program
         love.event.quit()
     end
 end
 
+-- Draw canvas and instructions
 function love.draw()
     love.graphics.setColor(1, 1, 1)
     love.graphics.draw(canvas, 0, 0)
@@ -92,6 +113,8 @@ function love.draw()
     love.graphics.print("Press 'C' = Toggle background color", 20, 40)
     love.graphics.print("Press 'D' = Clear board | Press 'X' = Exit", 20, 60)
 end
+
+
 
 
 
