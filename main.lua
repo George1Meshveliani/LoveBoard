@@ -1,18 +1,23 @@
-local lines = {}       -- stores drawn lines
 local drawing = false
-local bgWhite = true   -- current background: true = white, false = black
+local bgWhite = true
 local bgColor = {1, 1, 1}
 local penColor = {0, 0, 0}
+local canvas
+local prevX, prevY
 
 function love.load()
     love.window.setTitle("Love Board")
-    love.window.setMode(1200, 800, {resizable = true}) -- bigger, resizable window
+    love.window.setMode(1200, 800, {resizable = true})
+    canvas = love.graphics.newCanvas(1200, 800)
+    love.graphics.setCanvas(canvas)
+    love.graphics.clear(bgColor)
+    love.graphics.setCanvas()
 end
 
 function love.mousepressed(x, y, button)
     if button == 1 then
         drawing = true
-        table.insert(lines, {{x = x, y = y}})
+        prevX, prevY = x, y
     end
 end
 
@@ -24,18 +29,24 @@ end
 
 function love.mousemoved(x, y, dx, dy)
     if drawing then
-        local currentLine = lines[#lines]
-        table.insert(currentLine, {x = x, y = y})
+        love.graphics.setCanvas(canvas)
+        love.graphics.setColor(penColor)
+        love.graphics.setLineWidth(2)
+        love.graphics.line(prevX, prevY, x, y)
+        love.graphics.setCanvas()
+        prevX, prevY = x, y
     end
 end
 
 function love.keypressed(key)
     if key == "d" then
         -- clear board
-        lines = {}
+        love.graphics.setCanvas(canvas)
+        love.graphics.clear(bgColor)
+        love.graphics.setCanvas()
 
     elseif key == "c" then
-        -- toggle background color
+        -- toggle background color and invert canvas
         bgWhite = not bgWhite
         if bgWhite then
             bgColor = {1, 1, 1}
@@ -45,23 +56,32 @@ function love.keypressed(key)
             penColor = {1, 1, 1}
         end
 
+        -- Invert the existing canvas
+        local imgData = canvas:newImageData()
+        for x = 0, imgData:getWidth()-1 do
+            for y = 0, imgData:getHeight()-1 do
+                local r, g, b, a = imgData:getPixel(x, y)
+                r = 1 - r
+                g = 1 - g
+                b = 1 - b
+                imgData:setPixel(x, y, r, g, b, a)
+            end
+        end
+        canvas:renderTo(function()
+            love.graphics.setColor(1, 1, 1)
+            love.graphics.draw(love.graphics.newImage(imgData), 0, 0)
+        end)
+
     elseif key == "x" then
-        -- exit program
         love.event.quit()
     end
 end
 
 function love.draw()
-    love.graphics.clear(bgColor)
+    love.graphics.setColor(1, 1, 1)
+    love.graphics.draw(canvas, 0, 0)
 
-    love.graphics.setColor(penColor)
-    for _, line in ipairs(lines) do
-        for i = 2, #line do
-            love.graphics.line(line[i-1].x, line[i-1].y, line[i].x, line[i].y)
-        end
-    end
-
-    -- Instructions (contrast with background)
+    -- Instructions always contrast with background
     if bgWhite then
         love.graphics.setColor(0, 0, 0)
     else
@@ -72,6 +92,7 @@ function love.draw()
     love.graphics.print("Press 'C' = Toggle background color", 20, 40)
     love.graphics.print("Press 'D' = Clear board | Press 'X' = Exit", 20, 60)
 end
+
 
 
 
